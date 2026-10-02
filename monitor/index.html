@@ -45,7 +45,7 @@ header { padding: 16px 20px 8px; display: flex; flex-wrap: wrap; gap: 8px 24px; 
 h1 { font-size: 18px; margin: 0; font-weight: 650; }
 .sub { color: var(--ink2); font-size: 13px; }
 .bar { padding: 8px 20px 12px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
-  border-bottom: 1px solid var(--border); }
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; background: var(--page); }   /* time controls stay visible while scrolling */
 .now { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; min-width: 190px; }
 button { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--border);
   border-radius: 6px; padding: 4px 10px; cursor: pointer; }
@@ -85,7 +85,7 @@ td.maxc { width: 120px; text-align: left; }
 svg text { fill: var(--muted); font-size: 11px; }
 .serieslabel { font-size: 11px; font-weight: 600; fill: var(--ink2); }
 .tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-  padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; z-index: 10; font-variant-numeric: tabular-nums; }
+  padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; z-index: 30; font-variant-numeric: tabular-nums; }
 .tip .row { display: flex; gap: 6px; align-items: center; }
 .tip .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 ul.log { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow: auto; font-size: 12px; font-variant-numeric: tabular-nums; }
