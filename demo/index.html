@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PBRTQC モニター</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --mid: #f0efec;
+  --b1: #cde2fb; --b2: #86b6ef; --b3: #2a78d6; --b4: #184f95;
+  --r1: #fbd9d8; --r2: #f2a5a3; --r3: #e34948; --r4: #a32b2b;
+  --critical: #d03b3b; --good: #0ca30c; --warn: #fab219;
+  --sel: rgba(42,120,214,0.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    --mid: #383835;
+    --b1: #1c3a5e; --b2: #256abf; --b3: #3987e5; --b4: #86b6ef;
+    --r1: #4a2423; --r2: #9a3533; --r3: #e34948; --r4: #f2a5a3;
+    --sel: rgba(57,135,229,0.16);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+  --mid: #383835;
+  --b1: #1c3a5e; --b2: #256abf; --b3: #3987e5; --b4: #86b6ef;
+  --r1: #4a2423; --r2: #9a3533; --r3: #e34948; --r4: #f2a5a3;
+  --sel: rgba(57,135,229,0.16);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", sans-serif; }
+header { padding: 16px 20px 8px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; }
+h1 { font-size: 18px; margin: 0; font-weight: 650; }
+.sub { color: var(--ink2); font-size: 13px; }
+.bar { padding: 8px 20px 12px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
+  border-bottom: 1px solid var(--border); }
+.now { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; min-width: 190px; }
+button { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button:hover { background: var(--sel); }
+button[aria-pressed="true"] { border-color: var(--s1); color: var(--s1); }
+input[type=range] { flex: 1 1 320px; min-width: 200px; accent-color: var(--s1); }
+.kpis { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 20px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; min-width: 170px; }
+.kpi .v { font-size: 26px; font-weight: 650; }
+.kpi .l { color: var(--ink2); font-size: 12px; }
+main { display: grid; grid-template-columns: minmax(520px, 1fr) minmax(420px, 1fr); gap: 16px; padding: 0 20px 24px; }
+@media (max-width: 1080px) { main { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 8px; font-weight: 650; }
+.card .hint { color: var(--ink2); font-size: 12px; margin: 0 0 10px; }
+table.hm { border-collapse: separate; border-spacing: 2px; width: 100%; font-variant-numeric: tabular-nums; }
+table.hm th { font-size: 12px; font-weight: 600; color: var(--ink2); text-align: center; padding: 2px 4px; }
+table.hm th.it { text-align: left; }
+table.hm td { height: 26px; text-align: center; font-size: 12px; border-radius: 4px; position: relative; }
+table.hm td.it { text-align: left; font-weight: 600; padding-left: 6px; white-space: nowrap; background: none; }
+table.hm tr.row { cursor: pointer; }
+table.hm tr.row:hover td.it, table.hm tr.row.selected td.it { background: var(--sel); }
+table.hm tr.grp td { font-size: 11px; color: var(--muted); padding: 8px 0 0; height: auto; text-align: left; }
+td.na { color: var(--muted); }
+td.maxc { width: 120px; text-align: left; }
+.mbar { height: 10px; border-radius: 0 4px 4px 0; background: var(--axis); display: inline-block; vertical-align: middle; }
+.mbar.hot { background: var(--critical); }
+.mval { margin-left: 6px; color: var(--ink2); font-size: 11px; }
+.flag { color: var(--critical); font-weight: 700; margin-left: 4px; }
+.legend { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink2); margin-top: 10px; flex-wrap: wrap; }
+.legend .sw { width: 22px; height: 12px; border-radius: 3px; display: inline-block; }
+.tools { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; font-size: 12px; color: var(--ink2); margin-bottom: 10px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.cause { border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; font-size: 13px; background: var(--mid); }
+.cause .t { font-weight: 650; }
+svg text { fill: var(--muted); font-size: 11px; }
+.serieslabel { font-size: 11px; font-weight: 600; fill: var(--ink2); }
+.tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; z-index: 10; font-variant-numeric: tabular-nums; }
+.tip .row { display: flex; gap: 6px; align-items: center; }
+.tip .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+ul.log { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow: auto; font-size: 12px; font-variant-numeric: tabular-nums; }
+ul.log li { padding: 4px 2px; border-bottom: 1px solid var(--grid); display: flex; gap: 10px; cursor: pointer; }
+ul.log li:hover { background: var(--sel); }
+.lg { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; color: var(--ink); background: var(--surface); }
+.lg.off { opacity: 0.35; }
+.lg i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.foot { color: var(--muted); font-size: 11px; padding: 0 20px 20px; }
+.full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PBRTQC モニター</h1>
+  <span class="sub">1 号機 · IQC ＋ 患者データ（差の移動平均・even check・外来移動平均）· 2025 年データを再生</span>
+</header>
+<div class="bar">
+  <span class="now" id="now">—</span>
+  <button id="bD" title="1 日戻る（Shift+←）">◀◀ 1日</button>
+  <button id="bH" title="1 時間戻る（←）">◀ 1時間</button>
+  <input type="range" id="slider" min="0" max="0" step="1" aria-label="表示する日時">
+  <button id="fH" title="1 時間進む（→）">1時間 ▶</button>
+  <button id="fD" title="1 日進む（Shift+→）">1日 ▶▶</button>
+  <button id="play" aria-pressed="false">▶ 再生</button>
+  <button id="latest">最新</button>
+  <button id="theme" title="表示テーマ">◐</button>
+</div>
+<div class="kpis">
+  <div class="kpi"><div class="v" id="k1">—</div><div class="l">いま限界を超えている項目</div></div>
+  <div class="kpi"><div class="v" id="k2">—</div><div class="l">直近 24 時間の PBRTQC 警報</div></div>
+  <div class="kpi"><div class="v" id="k3">—</div><div class="l">直近 7 日の PBRTQC 警報</div></div>
+</div>
+<main>
+  <section class="card">
+    <h2>現在の状態（管理限界に対する位置）</h2>
+    <p class="hint">値 = (統計量 − 中心) / (3SD)。±1.00 が管理限界。行をクリックすると右に詳細。</p>
+    <div class="tools">
+      <button id="sortFixed" aria-pressed="true">装置順</button>
+      <button id="sortRisk" aria-pressed="false">要注意順</button>
+    </div>
+    <div id="bigWrap">
+      <div class="legend" id="bigLegend" style="margin:0 0 6px"></div>
+      <div id="big"></div>
+      <p class="hint" style="margin-top:4px">頂点 = 項目、中心からの距離 = 管理限界に対する位置の大きさ（|値|）。赤の点線の輪 = 管理限界、外側の輪 = 1.5。
+      輪の外に出た頂点が要注意。凡例をクリックで成分の表示を切替、項目名のクリックで詳細へ。</p>
+    </div>
+    <h2 style="margin-top:12px" id="tblHead">表</h2>
+    <table class="hm" id="hm"></table>
+    <div class="legend" id="legend"></div>
+  </section>
+  <section class="card">
+    <h2 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span id="dTitle">詳細</span>
+      <select id="pick" aria-label="詳細を表示する項目" style="font:inherit;font-size:13px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink)"></select>
+      <span style="font-size:12px;font-weight:400;color:var(--ink2)">左の表やレーダーの項目名をクリックしても選べます</span></h2>
+    <div class="meta" id="dMeta"></div>
+    <div class="meta" id="dSet" style="grid-template-columns:1fr"></div>
+    <div class="cause" id="dCause"></div>
+    <div id="chart"></div>
+    <h2 style="margin-top:14px" id="dLogHead">この項目の警報（前後 7 日）</h2>
+    <ul class="log" id="dLog"></ul>
+  </section>
+  <section class="card full">
+    <h2>警報の記録（直近 7 日・全項目）</h2>
+    <ul class="log" id="log"></ul>
+  </section>
+</main>
+<p class="foot">データ: 2023–2024 年で設定（警報の上限 0.25 件/週/項目）、2025 年を時刻順に再生。QC の中心は前日までの 30 日間の定期 QC の中央値（表示用）、SD は Total CV。
+原因の目安は IQC と患者データ成分の振れ方の組合せによる推定であり、判断は必ず担当者が行う。このページは 127.0.0.1 でのみ配信し、患者単位の値は含まない。</p>
+<div class="tip" id="tip"></div>
+
+<script>
+// ---- English display (?lang=en): translate rendered text through a phrase table (Japanese stays the default)
+const Q = new URLSearchParams(location.search);
+const LANG = Q.get("lang") === "ja" ? "ja" : "en";
+const EXACT = { "表": "Table", "詳細": "Details", "項目": "Analyte", "最大": "Max", "なし": "None", "最新": "Latest", "装置": "Analyzer", "装置 ": "Analyzer ",
+  "管理限界": "Control limit", "装置順": "By analyzer", "要注意順": "By severity" };
+const SUB = [
+  ["1 号機 · IQC ＋ 患者データ（差の移動平均・even check・外来移動平均）· 2025 年データを再生", "Analyzer #1 · IQC + patient data (average of deltas, even check, outpatient MA) · replay of 2025 data"],
+  ["値 = (統計量 − 中心) / (3SD)。±1.00 が管理限界。行をクリックすると右に詳細。", "Value = (statistic − centre) / (3 SD); ±1.00 = control limit. Click an analyte for details."],
+  ["頂点 = 項目、中心からの距離 = 管理限界に対する位置の大きさ（|値|）。赤の点線の輪 = 管理限界、外側の輪 = 1.5。", "Vertex = analyte; distance from the centre = |value|. Red dashed ring = control limit; outer ring = 1.5."],
+  ["輪の外に出た頂点が要注意。凡例をクリックで成分の表示を切替、項目名のクリックで詳細へ。", "Vertices outside the ring need attention. Click the legend to toggle components and an analyte for details."],
+  ["データ: 2023–2024 年で設定（警報の上限 0.25 件/週/項目）、2025 年を時刻順に再生。QC の中心は前日までの 30 日間の定期 QC の中央値（表示用）、SD は Total CV。",
+   "Settings from 2023–2024 (≤ 0.25 alarms/week/analyte); 2025 replayed in time order. QC centre = median of routine QC over the previous 30 days (display); SD = Total CV."],
+  ["原因の目安は IQC と患者データ成分の振れ方の組合せによる推定であり、判断は必ず担当者が行う。このページは 127.0.0.1 でのみ配信し、患者単位の値は含まない。",
+   "The interpretation is a hint from the pattern of IQC and patient-data components; decisions remain with the laboratory staff. Served on 127.0.0.1 only; no patient-level values."],
+  ["濃い色（|値| ≥ 1）＝管理限界の外 · ⚠ = その項目のいずれかの成分が限界外", "dark colour (|value| ≥ 1) = beyond the control limit · ⚠ = any component of the analyte beyond the limit"],
+  ["QC と患者データが同じ向きに振れている（試薬・キャリブレーション・装置）", "QC and patient data shifted in the same direction (reagent, calibration, instrument)"],
+  ["QC は限界内 → 患者集団の変化、または QC 試料と患者検体の非交換性の可能性", "QC within limits → possible change in the patient population, or non-commutability of QC material"],
+  ["患者データは限界内 → QC 試料側（劣化・ロット・取り違え）の可能性", "Patient data within limits → possible QC-material problem (deterioration, lot, mix-up)"],
+  ["濃度依存の誤差、または QC 試料側（劣化・取り違え）の可能性", "Concentration-dependent error, or a QC-material problem (deterioration, mix-up)"],
+  ["左の表やレーダーの項目名をクリックしても選べます", "or click an analyte in the radar or table"],
+  ["いま限界を超えている項目", "Analytes beyond a control limit now"],
+  ["直近 24 時間の PBRTQC 警報", "PBRTQC alarms, last 24 h"],
+  ["直近 7 日の PBRTQC 警報", "PBRTQC alarms, last 7 days"],
+  ["現在の状態（管理限界に対する位置）", "Current status (position relative to the control limits)"],
+  ["この項目の警報（前後 7 日）", "Alarms for this analyte (±7 days)"],
+  ["警報の記録（直近 7 日・全項目）", "Alarm log (last 7 days, all analytes)"],
+  ["QC と患者データがともに限界外", "QC and patient data both beyond limits"],
+  ["向きが一致しない。個別に確認", "Directions differ; check individually"],
+  ["QC の片方の濃度だけ限界外", "Only one QC level beyond the limit"],
+  ["患者データだけが限界外", "Only patient data beyond the limit"],
+  ["すべての成分が管理限界の内側", "All components within the control limits"],
+  ["分析系の変化の可能性", "Possible analytical change"],
+  ["限界内（やや振れあり）", "Within limits (some deviation)"],
+  ["QC だけが限界外", "Only QC beyond the limit"],
+  ["全項目のレーダーチャート", "Radar chart of all analytes"],
+  ["詳細を表示する項目", "Analyte to show"],
+  ["表示する日時", "Date and time"],
+  ["表示テーマ", "Theme"],
+  ["2.5–97.5%で打ち切り", "truncated at 2.5–97.5 %"],
+  ["基準範囲で打ち切り", "truncated at the reference interval"],
+  ["打ち切りなし", "no truncation"],
+  ["の各成分の推移", " components over time"],
+  ["。経過を見る", "; keep watching"],
+  ["原因の目安: ", "Interpretation: "],
+  ["統計量 ≈ ", "statistic ≈ "], ["（中心 ", " (centre "], ["、限界 ±", ", limit ±"],
+  ["前回値 ", "previous result ≤ "], [" 日以内", " d"],
+  ["差の移動平均", "Average of deltas"], ["外来移動平均", "Outpatient MA"],
+  ["◀◀ 1日", "◀◀ 1 day"], ["◀ 1時間", "◀ 1 h"], ["1時間 ▶", "1 h ▶"], ["1日 ▶▶", "1 day ▶▶"],
+  ["▶ 再生", "▶ Play"], ["■ 停止", "■ Stop"], ["PBRTQC モニター", "PBRTQC monitor"],
+  ["限界超え", "beyond limit"], ["限界内", "Within limits"], ["+限界", "+limit"], ["−限界", "−limit"],
+  ["低い側", "low side"], ["高い側", "high side"], ["位置 ", "position "], ["設定: ", "setting: "], ["最大 ", "max "],
+  ["1 日戻る（Shift+←）", "Back 1 day (Shift+←)"], ["1 時間戻る（←）", "Back 1 h (←)"], ["1 時間進む（→）", "Forward 1 h (→)"], ["1 日進む（Shift+→）", "Forward 1 day (Shift+→)"],
+  [" 〜 ", " – "], ["〜", "–"], ["・", " · "], ["（", " ("], ["）", ")"], ["、", ", "], ["。", ". "],
+];
+function tr(x) {
+  if (LANG !== "en" || !x) return x;
+  const k = x.trim();
+  if (k in EXACT) return x.replace(k, EXACT[k]);
+  for (const [a, b] of SUB) if (x.includes(a)) x = x.split(a).join(b);
+  return x;
+}
+function translate(root) {
+  if (LANG !== "en" || !root) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) n.nodeValue = tr(n.nodeValue);
+  root.querySelectorAll("[title],[aria-label]").forEach(el => {
+    for (const a of ["title", "aria-label"]) if (el.hasAttribute(a)) el.setAttribute(a, tr(el.getAttribute(a)));
+  });
+}
+if (LANG === "en") { document.documentElement.lang = "en"; document.title = "PBRTQC monitor"; }
+if (Q.get("theme") === "light" || Q.get("theme") === "dark") document.documentElement.dataset.theme = Q.get("theme");
+if (Q.get("compact") === "1") {          // figure mode: radar + detail only
+  const st = document.createElement("style");
+  st.textContent = "#hm, #hm + .legend, #tblHead, .card.full, .foot, #dLog, #dLogHead { display: none !important; }";
+  document.head.appendChild(st);
+}
+
+const COMP = [
+  { k: "qcL",  name: "QC L",       col: "var(--s1)" },
+  { k: "qcH",  name: "QC H",       col: "var(--s2)" },
+  { k: "aod",  name: "差の移動平均", col: "var(--s3)" },
+  { k: "even", name: "even check", col: "var(--s4)" },
+  { k: "out",  name: "外来移動平均", col: "var(--s5)" },
+];
+let D, T0, NH, cur = 0, sel = 0, sortMode = "fixed", timer = null;
+const $ = id => document.getElementById(id);
+const tip = $("tip");
+
+function tAt(i) { return new Date(T0.getTime() + i * 3600e3); }
+function fmt(d) {
+  const p = n => String(n).padStart(2, "0");
+  if (LANG === "en") return `${"Sun Mon Tue Wed Thu Fri Sat".split(" ")[d.getDay()]} ${p(d.getDate())} ${"Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ")[d.getMonth()]} ${d.getFullYear()} ${p(d.getHours())}:00`;
+  const w = "日月火水木金土"[d.getDay()];
+  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}（${w}） ${p(d.getHours())}:00`;
+}
+function fmtS(s) { return s.replace("T", " ").slice(5, 16).replace("-", "/"); }
+function fmtSetting(k, st) {
+  if (!st) return "—";
+  const [tr, n] = st.split("/N");
+  const parts = tr.split("|");
+  const tname = { "2.5-97.5": "2.5–97.5%で打ち切り", "none": "打ち切りなし", "ref": "基準範囲で打ち切り" };
+  const out = [];
+  for (const p of parts) {
+    if (p.startsWith("G")) out.push("前回値 " + p.slice(1) + " 日以内");
+    else if (k !== "even") out.push(tname[p] || p);
+  }
+  out.push("N = " + n);
+  return out.join("・");
+}
+function val(it, k, i) { const v = it.scores[k][i]; return v === null ? null : v; }
+function maxAbs(it, i) { let m = 0; for (const c of COMP) { const v = val(it, c.k, i); if (v !== null) m = Math.max(m, Math.abs(v)); } return m; }
+
+function cellColor(v) {
+  if (v === null) return "transparent";
+  const a = Math.abs(v), s = v >= 0 ? "r" : "b";
+  if (a < 0.33) return "var(--mid)";
+  if (a < 0.67) return `var(--${s}1)`;
+  if (a < 1.0) return `var(--${s}2)`;
+  if (a < 1.5) return `var(--${s}3)`;
+  return `var(--${s}4)`;
+}
+function cellInk(v) {
+  if (v === null) return "var(--muted)";
+  const a = Math.abs(v);
+  const dark = document.documentElement.dataset.theme === "dark" ||
+    (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  if (a >= 1.0) return dark ? "#0b0b0b" : "#ffffff";
+  return "var(--ink)";
+}
+
+function cause(it, i) {
+  const g = k => val(it, k, i);
+  const qL = g("qcL"), qH = g("qcH");
+  const pb = ["aod", "even", "out"].map(g).filter(v => v !== null);
+  const qcOut = [qL, qH].filter(v => v !== null && Math.abs(v) >= 1);
+  const pbOut = pb.filter(v => Math.abs(v) >= 1);
+  const sgn = a => a.length && a.every(v => v > 0) ? 1 : a.length && a.every(v => v < 0) ? -1 : 0;
+  if (!qcOut.length && !pbOut.length) {
+    const m = maxAbs(it, i);
+    return m >= 0.67 ? ["限界内（やや振れあり）", "最大 " + m.toFixed(2) + "。経過を見る"] : ["限界内", "すべての成分が管理限界の内側"];
+  }
+  if (qcOut.length && pbOut.length) {
+    const sq = sgn(qcOut), sp = sgn(pbOut);
+    if (sq !== 0 && sq === sp) return ["分析系の変化の可能性", "QC と患者データが同じ向きに振れている（試薬・キャリブレーション・装置）"];
+    return ["QC と患者データがともに限界外", "向きが一致しない。個別に確認"];
+  }
+  if (qcOut.length) {
+    if (qcOut.length === 1 && [qL, qH].filter(v => v !== null).length === 2 && !(Math.abs(qL) >= 0.67 && Math.abs(qH) >= 0.67))
+      return ["QC の片方の濃度だけ限界外", "濃度依存の誤差、または QC 試料側（劣化・取り違え）の可能性"];
+    return ["QC だけが限界外", "患者データは限界内 → QC 試料側（劣化・ロット・取り違え）の可能性"];
+  }
+  return ["患者データだけが限界外", "QC は限界内 → 患者集団の変化、または QC 試料と患者検体の非交換性の可能性"];
+}
+
+function renderHeat() {
+  const t = $("hm");
+  const rows = D.items.map((it, j) => ({ it, j, m: maxAbs(it, cur) }));
+  if (sortMode === "risk") rows.sort((a, b) => b.m - a.m);
+  else {
+    const order = [...new Set(D.items.map(x => x.analyzer))];
+    rows.sort((a, b) => order.indexOf(a.it.analyzer) - order.indexOf(b.it.analyzer) || a.j - b.j);
+  }
+  let h = "<thead><tr><th class='it'>項目</th>" + COMP.map(c => `<th>${c.name}</th>`).join("") + "<th>最大</th></tr></thead><tbody>";
+  let lastGrp = null;
+  for (const r of rows) {
+    if (sortMode === "fixed" && r.it.analyzer !== lastGrp) {
+      h += `<tr class="grp"><td colspan="7">${r.it.analyzer}</td></tr>`; lastGrp = r.it.analyzer;
+    }
+    h += `<tr class="row${r.j === sel ? " selected" : ""}" data-j="${r.j}"><td class="it">${r.it.item}${r.m >= 1 ? "<span class='flag' title='限界超え'>⚠</span>" : ""}</td>`;
+    for (const c of COMP) {
+      const v = val(r.it, c.k, cur);
+      h += `<td data-j="${r.j}" data-k="${c.k}" style="background:${cellColor(v)};color:${cellInk(v)}"${v === null ? " class='na'" : ""}>${v === null ? "—" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2)}</td>`;
+    }
+    const w = Math.min(r.m, 2) / 2 * 80;
+    h += `<td class="maxc"><span class="mbar${r.m >= 1 ? " hot" : ""}" style="width:${Math.max(w, 2)}px"></span><span class="mval">${r.m.toFixed(2)}</span></td></tr>`;
+  }
+  t.innerHTML = h + "</tbody>";
+  t.querySelectorAll("tr.row").forEach(tr => tr.onclick = () => { sel = +tr.dataset.j; render(); });
+  t.querySelectorAll("td[data-k]").forEach(td => {
+    td.onmousemove = e => {
+      const it = D.items[+td.dataset.j], k = td.dataset.k, v = val(it, k, cur), m = it.comps[k];
+      const c = COMP.find(x => x.k === k);
+      let raw = "";
+      if (v !== null && m) raw = `<br>統計量 ≈ ${(m.centre + v * m.half).toPrecision(4)}（中心 ${m.centre.toPrecision(4)}、限界 ±${m.half.toPrecision(3)}）`;
+      showTip(e, `<b>${it.item} · ${c.name}</b><br>位置 ${v === null ? "—" : v.toFixed(2)}${raw}<br><span style="color:var(--muted)">設定: ${m ? (k.startsWith("qc") ? m.setting : fmtSetting(k, m.setting)) : "—"}</span>`);
+    };
+    td.onmouseleave = hideTip;
+  });
+}
+
+function renderLegend() {
+  const steps = [["var(--b4)", "≤ −1.5"], ["var(--b3)", "−1.5〜−1"], ["var(--b2)", "−1〜−0.67"], ["var(--b1)", ""], ["var(--mid)", "±0.33"],
+                 ["var(--r1)", ""], ["var(--r2)", "0.67〜1"], ["var(--r3)", "1〜1.5"], ["var(--r4)", "≥ 1.5"]];
+  $("legend").innerHTML = "<span>低い側</span>" + steps.map(s => `<span class="sw" style="background:${s[0]}" title="${s[1]}"></span>`).join("") +
+    "<span>高い側</span><span style='margin-left:12px'>濃い色（|値| ≥ 1）＝管理限界の外 · ⚠ = その項目のいずれかの成分が限界外</span>";
+}
+
+function renderDetail() {
+  const it = D.items[sel];
+  $("dTitle").textContent = "詳細";
+  $("pick").value = sel;
+  $("dMeta").innerHTML = `<span>装置 <b>${it.analyzer}</b></span><span>TEa <b>${it.tea}%</b></span><span>CVa <b>${it.cva}%</b></span><span>σ <b>${it.sigma}</b></span>`;
+  $("dSet").innerHTML = COMP.filter(c => !c.k.startsWith("qc")).map(c => `<span>${c.name}: <b>${fmtSetting(c.k, (it.comps[c.k] || {}).setting)}</b></span>`).join("");
+  const [t, d] = cause(it, cur);
+  const hot = maxAbs(it, cur) >= 1;
+  $("dCause").innerHTML = `<span class="t">${hot ? "⚠ " : ""}原因の目安: ${t}</span><br>${d}`;
+  $("dCause").style.background = hot ? "var(--r1)" : "var(--mid)";
+  renderChart(it);
+  const lo = tAt(cur - 7 * 24), hi = tAt(cur + 7 * 24);
+  const eps = it.episodes.filter(e => new Date(e.s) >= lo && new Date(e.s) <= hi);
+  $("dLog").innerHTML = eps.length ? eps.map(e => `<li data-s="${e.s}"><span>${fmtS(e.s)} 〜 ${fmtS(e.e)}</span><span>${COMP.find(c => c.k === e.c).name}</span></li>`).join("")
+    : "<li style='cursor:default;color:var(--muted)'>なし</li>";
+  $("dLog").querySelectorAll("li[data-s]").forEach(li => li.onclick = () => jump(li.dataset.s));
+}
+
+const shown = { qcL: true, qcH: true, aod: true, even: true, out: true };
+function axisOrder() {
+  const order = [...new Set(D.items.map(x => x.analyzer))];
+  return D.items.map((it, j) => j).sort((a, b) => order.indexOf(D.items[a].analyzer) - order.indexOf(D.items[b].analyzer) || a - b);
+}
+function renderBigLegend() {
+  $("bigLegend").innerHTML = COMP.map(c => `<span class="lg${shown[c.k] ? "" : " off"}" data-k="${c.k}"><i style="background:${c.col}"></i>${c.name}</span>`).join("") +
+    `<span style="margin-left:8px;color:var(--ink2)"><span style="display:inline-block;width:18px;border-top:2px dashed var(--critical);vertical-align:middle"></span> 管理限界</span>`;
+  $("bigLegend").querySelectorAll(".lg").forEach(el => el.onclick = () => { shown[el.dataset.k] = !shown[el.dataset.k]; renderBigLegend(); renderBig(); translate(document.body); });
+  translate($("bigLegend"));
+}
+function renderBig() {
+  const ord = axisOrder(), n = ord.length;
+  const W = Math.min($("bigWrap").clientWidth || 560, 640), size = W, c = size / 2, R = size / 2 - 62, MAX = 1.5;
+  const ang = k => -Math.PI / 2 + k * 2 * Math.PI / n;
+  const pt = (k, r) => [c + Math.cos(ang(k)) * r, c + Math.sin(ang(k)) * r];
+  const rr = v => Math.min(Math.abs(v), MAX) / MAX * R;
+  let s = `<svg width="${size}" height="${size}" role="img" aria-label="全項目のレーダーチャート">`;
+  // analyzer sectors (subtle background wedges)
+  for (const g of [0.5, 1.0, 1.5]) {
+    const poly = ord.map((_, k) => pt(k, g / MAX * R).join(",")).join(" ");
+    s += `<polygon points="${poly}" fill="none" stroke="${g === 1 ? "var(--critical)" : "var(--grid)"}" stroke-width="${g === 1 ? 1.5 : 1}" ${g === 1 ? "stroke-dasharray='5 4'" : ""}/>`;
+  }
+  ord.forEach((j, k) => { const [x, y] = pt(k, R); s += `<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="var(--grid)"/>`; });
+  s += `<text x="${c + 3}" y="${c - 1.0 / MAX * R - 3}" style="font-size:10px;fill:var(--critical)">1.0</text>`;
+  s += `<text x="${c + 3}" y="${c - R - 3}" style="font-size:10px">1.5</text>`;
+  for (const cmp of COMP) {
+    if (!shown[cmp.k]) continue;
+    const pts = ord.map((j, k) => { const v = val(D.items[j], cmp.k, cur); return pt(k, v === null ? 0 : rr(v)); });
+    s += `<polygon points="${pts.map(p => p.join(",")).join(" ")}" fill="${cmp.col}" fill-opacity="0.06" stroke="${cmp.col}" stroke-width="2" stroke-linejoin="round"/>`;
+    ord.forEach((j, k) => {
+      const v = val(D.items[j], cmp.k, cur);
+      if (v !== null && Math.abs(v) >= 1) {
+        const [x, y] = pts[k];
+        s += `<circle cx="${x}" cy="${y}" r="5" fill="${cmp.col}" stroke="var(--surface)" stroke-width="2"/>`;
+      }
+    });
+  }
+  ord.forEach((j, k) => {
+    const it = D.items[j], m = maxAbs(it, cur), [x, y] = pt(k, R + 18);
+    const anchor = Math.abs(x - c) < 6 ? "middle" : x > c ? "start" : "end";
+    const hot = m >= 1;
+    s += `<g class="ax" data-j="${j}" style="cursor:pointer"><circle cx="${x}" cy="${y - 4}" r="16" fill="transparent"/>` +
+      `<text x="${x}" y="${y}" text-anchor="${anchor}" style="font-size:12px;font-weight:${j === sel ? 700 : 600};fill:${hot ? "var(--critical)" : j === sel ? "var(--ink)" : "var(--ink2)"}">${hot ? "⚠ " : ""}${it.item}</text></g>`;
+  });
+  s += "</svg>";
+  $("big").innerHTML = s;
+  $("big").querySelectorAll("g.ax").forEach(g => {
+    const it = D.items[+g.dataset.j];
+    g.onclick = () => { sel = +g.dataset.j; render(); };
+    g.onmousemove = e => showTip(e, `<b>${it.item}</b>（${it.analyzer}）` + COMP.map(cm => {
+      const v = val(it, cm.k, cur);
+      return `<div class="row"><span class="dot" style="background:${cm.col}"></span>${cm.name}<span style="margin-left:auto;padding-left:10px;${v !== null && Math.abs(v) >= 1 ? "color:var(--critical);font-weight:700" : ""}">${v === null ? "—" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2)}</span></div>`;
+    }).join(""));
+    g.onmouseleave = hideTip;
+  });
+}
+
+function renderChart(it) {
+  const W = $("chart").clientWidth || 480, H = 250, L = 44, R = LANG === "en" ? 128 : 92, Tp = 10, B = 26;
+  const a = Math.max(0, cur - 6 * 24), b = Math.min(NH - 1, cur + 24);
+  const x = i => L + (i - a) / Math.max(b - a, 1) * (W - L - R);
+  const YM = 2, y = v => Tp + (YM - Math.max(-YM, Math.min(YM, v))) / (2 * YM) * (H - Tp - B);
+  let s = `<svg width="${W}" height="${H}" role="img" aria-label="${it.item} の各成分の推移">`;
+  for (const g of [-2, -1, 0, 1, 2]) {
+    const lim = Math.abs(g) === 1;
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(g)}" y2="${y(g)}" stroke="${lim ? "var(--critical)" : g === 0 ? "var(--axis)" : "var(--grid)"}" stroke-width="1" ${lim ? "stroke-dasharray='4 3'" : ""}/>`;
+    s += `<text x="${L - 6}" y="${y(g) + 4}" text-anchor="end">${g === 1 ? "+限界" : g === -1 ? "−限界" : g}</text>`;
+  }
+  for (let i = a; i <= b; i++) {
+    const d = tAt(i);
+    if (d.getHours() === 0) {
+      s += `<line x1="${x(i)}" x2="${x(i)}" y1="${Tp}" y2="${H - B}" stroke="var(--grid)"/>`;
+      s += `<text x="${x(i) + 3}" y="${H - 8}">${d.getMonth() + 1}/${d.getDate()}</text>`;
+    }
+  }
+  s += `<line x1="${x(cur)}" x2="${x(cur)}" y1="${Tp}" y2="${H - B}" stroke="var(--ink2)" stroke-width="1.5"/>`;
+  const ends = [];
+  for (const c of COMP) {
+    let p = "", started = false;
+    for (let i = a; i <= b; i++) {
+      const v = val(it, c.k, i);
+      if (v === null) { started = false; continue; }
+      p += (started ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1); started = true;
+    }
+    s += `<path d="${p}" fill="none" stroke="${c.col}" stroke-width="2" stroke-linejoin="round"/>`;
+    const vb = val(it, c.k, b);
+    if (vb !== null) ends.push({ c, yv: y(vb) });
+  }
+  ends.sort((p, q) => p.yv - q.yv);
+  for (let i = 1; i < ends.length; i++) if (ends[i].yv - ends[i - 1].yv < 13) ends[i].yv = ends[i - 1].yv + 13;
+  for (const e of ends) s += `<circle cx="${W - R + 4}" cy="${e.yv}" r="3" fill="${e.c.col}"/><text class="serieslabel" x="${W - R + 10}" y="${e.yv + 4}">${e.c.name}</text>`;
+  s += `<line id="xh" x1="0" x2="0" y1="${Tp}" y2="${H - B}" stroke="var(--muted)" stroke-width="1" style="display:none"/>`;
+  s += `<rect id="hit" x="${L}" y="${Tp}" width="${W - L - R}" height="${H - Tp - B}" fill="transparent"/></svg>`;
+  $("chart").innerHTML = s;
+  const hit = $("chart").querySelector("#hit"), xh = $("chart").querySelector("#xh");
+  hit.onmousemove = e => {
+    const r = hit.getBoundingClientRect();
+    const i = Math.round(a + (e.clientX - r.left) / r.width * (b - a));
+    xh.setAttribute("x1", x(i)); xh.setAttribute("x2", x(i)); xh.style.display = "";
+    showTip(e, `<b>${fmt(tAt(i))}</b>` + COMP.map(c => {
+      const v = val(it, c.k, i);
+      return `<div class="row"><span class="dot" style="background:${c.col}"></span>${c.name}<span style="margin-left:auto;padding-left:10px">${v === null ? "—" : v.toFixed(2)}</span></div>`;
+    }).join(""));
+  };
+  hit.onmouseleave = () => { xh.style.display = "none"; hideTip(); };
+  hit.onclick = e => { const r = hit.getBoundingClientRect(); setCur(Math.round(a + (e.clientX - r.left) / r.width * (b - a))); };
+}
+
+function renderLog() {
+  const lo = tAt(cur - 7 * 24), hi = tAt(cur + 1);
+  const all = [];
+  for (const it of D.items) for (const e of it.episodes) { const t = new Date(e.s); if (t >= lo && t < hi) all.push({ it, e, t }); }
+  all.sort((p, q) => q.t - p.t);
+  const d24 = all.filter(r => r.t >= tAt(cur - 24)).length;
+  $("k2").textContent = d24; $("k3").textContent = all.length;
+  $("log").innerHTML = all.length ? all.map(r => `<li data-s="${r.e.s}" data-j="${D.items.indexOf(r.it)}"><span>${fmtS(r.e.s)}</span><b>${r.it.item}</b><span>${COMP.find(c => c.k === r.e.c).name}</span><span style="color:var(--muted)">〜${fmtS(r.e.e)}</span></li>`).join("")
+    : "<li style='cursor:default;color:var(--muted)'>なし</li>";
+  $("log").querySelectorAll("li[data-s]").forEach(li => li.onclick = () => { sel = +li.dataset.j; jump(li.dataset.s); });
+}
+
+function render() {
+  $("now").textContent = fmt(tAt(cur));
+  $("slider").value = cur;
+  $("k1").textContent = D.items.filter(it => maxAbs(it, cur) >= 1).length + " / " + D.items.length;
+  renderHeat(); renderBig(); renderDetail(); renderLog();
+  translate(document.body);
+}
+function setCur(i) { cur = Math.max(0, Math.min(NH - 1, i)); render(); }
+function jump(s) { const t = new Date(s); setCur(Math.round((t - T0) / 3600e3)); }
+function showTip(e, html) { tip.innerHTML = html; translate(tip); tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - w - 8) + "px"; tip.style.top = Math.min(e.clientY + 14, innerHeight - h - 8) + "px"; }
+function hideTip() { tip.style.display = "none"; }
+
+fetch("data.json").then(r => r.json()).then(d => {
+  D = d; T0 = new Date(d.hours[0]); NH = d.hours[1];
+  $("slider").max = NH - 1; cur = NH - 1;
+  $("pick").innerHTML = D.items.map((it, j) => `<option value="${j}">${it.item}（${it.analyzer}）</option>`).join("");
+  $("pick").onchange = e => { sel = +e.target.value; render(); };
+  if (D.demo) {                          // synthetic demonstration data: make it unmistakable
+    const b = document.createElement("div");
+    b.style.cssText = "background:#fab219;color:#0b0b0b;padding:8px 20px;font-weight:650;font-size:14px";
+    b.textContent = (LANG === "en" ? "SYNTHETIC DEMONSTRATION DATA — not real patient results. " : "合成デモデータ（実際の患者データではありません）。") + (D.demo_note || "");
+    document.body.prepend(b);
+    document.querySelector(".foot").textContent = LANG === "en"
+      ? "Demo of the monitoring screen from the PBRTQC + IQC study. All values are simulated. Code: see the repository README."
+      : "PBRTQC + IQC 研究のモニター画面のデモ。値はすべてシミュレーション。";
+    document.querySelector(".sub").textContent = LANG === "en" ? "Demo analyzer · IQC + patient data (average of deltas, even check, outpatient MA) · synthetic replay"
+      : "デモ装置 · IQC ＋ 患者データ · 合成データの再生";
+  }
+  if (Q.get("t")) cur = Math.max(0, Math.min(NH - 1, Math.round((new Date(Q.get("t")) - T0) / 3600e3)));
+  if (Q.get("item")) { const j = D.items.findIndex(x => x.item === Q.get("item")); if (j >= 0) sel = j; }
+  renderLegend(); renderBigLegend(); render();
+  if (Q.get("play") === "1") $("play").click();
+  document.body.dataset.ready = "1";
+});
+$("slider").oninput = e => setCur(+e.target.value);
+$("bH").onclick = () => setCur(cur - 1); $("fH").onclick = () => setCur(cur + 1);
+$("bD").onclick = () => setCur(cur - 24); $("fD").onclick = () => setCur(cur + 24);
+$("latest").onclick = () => setCur(NH - 1);
+$("play").onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $("play").textContent = tr("▶ 再生"); $("play").setAttribute("aria-pressed", "false"); return; }
+  $("play").textContent = tr("■ 停止"); $("play").setAttribute("aria-pressed", "true");
+  const until = Q.get("until") ? Math.round((new Date(Q.get("until")) - T0) / 3600e3) : NH - 1;
+  timer = setInterval(() => { if (cur >= Math.min(until, NH - 1)) $("play").click(); else setCur(cur + 1); }, +(Q.get("speed") || 150));
+};
+$("sortFixed").onclick = () => { sortMode = "fixed"; $("sortFixed").setAttribute("aria-pressed", "true"); $("sortRisk").setAttribute("aria-pressed", "false"); render(); };
+$("sortRisk").onclick = () => { sortMode = "risk"; $("sortRisk").setAttribute("aria-pressed", "true"); $("sortFixed").setAttribute("aria-pressed", "false"); render(); };
+
+$("theme").onclick = () => {
+  const r = document.documentElement, dark = r.dataset.theme === "dark" || (!r.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  r.dataset.theme = dark ? "light" : "dark"; render();
+};
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if (e.key === "ArrowLeft") { setCur(cur - (e.shiftKey ? 24 : 1)); e.preventDefault(); }
+  if (e.key === "ArrowRight") { setCur(cur + (e.shiftKey ? 24 : 1)); e.preventDefault(); }
+});
+addEventListener("resize", () => D && render());
+</script>
+</body>
+</html>
