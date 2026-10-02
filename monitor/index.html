@@ -366,7 +366,7 @@ function renderDetail() {
   $("dCause").innerHTML = `<span class="t">${hot ? "⚠ " : ""}原因の目安: ${t}</span><br>${d}`;
   $("dCause").style.background = hot ? "var(--r1)" : "var(--mid)";
   renderChart(it);
-  const lo = tAt(cur - 7 * 24), hi = tAt(cur + 7 * 24);
+  const lo = tAt(cur - 7 * 24), hi = tAt(cur + 1);
   const eps = it.episodes.filter(e => new Date(e.s) >= lo && new Date(e.s) <= hi);
   $("dLog").innerHTML = eps.length ? eps.map(e => `<li data-s="${e.s}"><span>${fmtS(e.s)} 〜 ${fmtS(e.e)}</span><span>${COMP.find(c => c.k === e.c).name}</span></li>`).join("")
     : "<li style='cursor:default;color:var(--muted)'>なし</li>";
@@ -433,7 +433,7 @@ function renderBig() {
 
 function renderChart(it) {
   const W = $("chart").clientWidth || 480, H = 250, L = 44, R = LANG === "en" ? 128 : 92, Tp = 10, B = 26;
-  const a = Math.max(0, cur - 6 * 24), b = Math.min(NH - 1, cur + 24);
+  const a = Math.max(0, cur - 7 * 24), b = cur;                     // last 7 days up to now (no future data)
   const x = i => L + (i - a) / Math.max(b - a, 1) * (W - L - R);
   const YM = 2, y = v => Tp + (YM - Math.max(-YM, Math.min(YM, v))) / (2 * YM) * (H - Tp - B);
   let s = `<svg width="${W}" height="${H}" role="img" aria-label="${it.item} の各成分の推移">`;
