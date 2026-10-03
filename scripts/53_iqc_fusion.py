@@ -30,6 +30,10 @@ What-if runs for the Discussion (no change to the actual operation is implied):
   --items=Na,ALB   restrict to these items
   Output: outputs/tables/fusion_whatif_cap<X>_qc<hours>.csv (IQC and IQC + aod+even+out only).
 
+Contribution of each component (--loo): the chosen IQC + AoD + even check + outpatient MA system with one component
+removed at a time, settings unchanged (no re-selection), same onsets and QC draws as the main run.
+Output: outputs/tables/fusion_loo.csv (systems full, no_aod, no_even, no_out, PB:full = without IQC, IQC).
+
 Outputs (aggregates only): outputs/tables/iqc_totalcv.csv, outputs/tables/fusion.csv
 """
 import sys
@@ -53,8 +57,9 @@ CAP = ARGS.get("cap", "0.25")
 EXTRA_QC = [int(h) for h in ARGS["extra-qc"].split(",")] if "extra-qc" in ARGS else []
 ITEMS = ARGS["items"].split(",") if "items" in ARGS else spec.ITEMS
 WHATIF = bool({"cap", "extra-qc", "items"} & set(ARGS))
+LOO = "--loo" in sys.argv
 SENS = UNIT != 1 or lis.VALUE != "initial"
-SYSTEMS = ["aod+even+out"] if WHATIF else ["aod+even+out", "aod+out", "even+out", "in+out", "pooled"]
+SYSTEMS = ["aod+even+out"] if WHATIF or LOO else ["aod+even+out", "aod+out", "even+out", "in+out", "pooled"]
 HIST = 10
 S = spec.load()
 rng = np.random.default_rng(20260930)
@@ -113,10 +118,14 @@ for it in ITEMS:
 
     sel = pairs[(pairs["item"] == it) & (pairs["cap"] == CAP)].set_index("system")["setting"]
     comps = {s: sel[s].split("+") for s in SYSTEMS}
+    if LOO:                                    # drop one component at a time, settings fixed
+        full = comps.pop("aod+even+out")
+        comps = {"full": full, **{f"no_{c}": [x for x in full if not x.startswith(c + ":")] for c in ("aod", "even", "out")}}
+    SYSEVAL = list(comps)
     streams = {k: build(k, d, dtabs, it) for k in {c for v in comps.values() for c in v}}
     eps = {k: R.episodes(st) for k, st in streams.items()}
     far = {}
-    for s_ in SYSTEMS:
+    for s_ in SYSEVAL:
         e_ = R.merge(sum((eps[c] for c in comps[s_]), []))
         far[s_] = (R.rate_per_week(e_, R.DEV), R.rate_per_week(e_, R.VAL))
 
@@ -131,7 +140,7 @@ for it in ITEMS:
                  for sg in (1.0, -1.0)}
         dpe_t = np.array([dpe_s[sg] for sg in signs])
         dpe = float(dpe_t.mean())
-        det = {s: np.full(N_TRIALS, np.inf) for s in ["IQC"] + SYSTEMS + [f"PB:{s}" for s in SYSTEMS]}
+        det = {s: np.full(N_TRIALS, np.inf) for s in ["IQC"] + SYSEVAL + [f"PB:{s}" for s in SYSEVAL]}
         finals = {s: np.zeros(N_TRIALS) for s in det}
         for j in range(N_TRIALS):
             b = signs[j] * bias
@@ -140,7 +149,7 @@ for it in ITEMS:
             td_iqc = iqc_detect(ev_t, t_on[j], zdraw[j][:, 0].copy(), zdraw[j][:, 1].copy(), b / cv["L"], b / cv["H"])
             hc = {c: R.first_alarm_hours(streams[c], t_on[j], b)[1] for c in streams}
             tds = {"IQC": td_iqc}
-            for s in SYSTEMS:
+            for s in SYSEVAL:
                 h = min(hc[c] for c in comps[s])
                 t_pb = t_on[j] + np.timedelta64(int(h * 3600), "s") if np.isfinite(h) else None
                 tds[f"PB:{s}"] = t_pb
@@ -167,11 +176,13 @@ for it in ITEMS:
 name = "fusion_eqa" if EQA else "fusion"
 if SENS:
     name = f"fusion_sens_unit{UNIT}_{lis.VALUE}"
+if LOO:
+    name = "fusion_loo"
 if WHATIF:
     name = f"fusion_whatif_cap{CAP}_qc{'-'.join(map(str, EXTRA_QC)) or 'none'}"
     pd.DataFrame(cv_rows).to_csv(ROOT / f"outputs/tables/{name}_iqc.csv", index=False)
 elif SENS:
     pd.DataFrame(cv_rows).to_csv(ROOT / f"outputs/tables/{name}_iqc.csv", index=False)
-elif not EQA:
+elif not EQA and not LOO:
     pd.DataFrame(cv_rows).to_csv(ROOT / "outputs/tables/iqc_totalcv.csv", index=False)
 pd.DataFrame(rows).replace(np.inf, np.nan).to_csv(ROOT / f"outputs/tables/{name}.csv", index=False)

@@ -19,7 +19,7 @@ injected on 20–23 January. Useful URL parameters: `?t=2025-01-21T10:00&item=Ca
 | `scripts/52_select_validate.py` | Select settings in the development period under an alarm limit; evaluate in the validation year |
 | `scripts/53_iqc_fusion.py` | IQC + PBRTQC fusion simulation, detection time and MaxE(Nuf) |
 | `scripts/54_shadow_concordance.py` | Real-data shadow operation and concordance with QC shifts |
-| `scripts/55`–`57` | Control-limit widths, check against Parvin's formula, Figure 1 data |
+| `scripts/55`–`58` | Control-limit widths, check against Parvin's formula, Figure 1 data, contribution of each component (`53 --loo`) |
 | `scripts/60_build_monitor.py` | Data for the monitoring screen |
 | `scripts/demo_make_data.py` | Synthetic data for the demo (no patient data) |
 | `monitor/index.html` | Monitoring screen (single file, no external libraries) |
