@@ -4,7 +4,7 @@ Code and a synthetic demonstration for the study *Combining patient-based real-t
 control to reduce patient risk* (Clinica Chimica Acta, submitted).
 
 **Live demo (synthetic data only):** https://hidekazuishida.github.io/pbrtqc-iqc/demo/ (GitHub Pages), or open `demo/index.html` through a local web server.
-The demo replays January 2025 for one simulated analyzer with 10 analytes; a systematic error of +1.5 × TEa on Ca is
+The demo replays January 2025 for one simulated analyzer with the 20 study analytes; a systematic error of +1.5 × TEa on Ca is
 injected on 20–23 January. Useful URL parameters: `?t=2025-01-21T10:00&item=Ca`, `&play=1&speed=250&until=2025-01-24T00:00`,
 `&lang=ja`, `&theme=light`.
 
