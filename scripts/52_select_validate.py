@@ -78,7 +78,7 @@ for it in spec.ITEMS:
             st[key], ep[key] = x, R.episodes(x)
             nh = np.array([R.first_alarm_hours(x, t_dev[j], signs[j] * tea) for j in range(N_TRIALS)])
             hrs[key] = nh[:, 1]
-            r = dict(item=it, stream="aod", trunc=trunc, N=N, far_dev_wk=R.rate_per_week(ep[key], R.DEV))
+            r = dict(item=it, stream="aod", trunc=f"{trunc}|G{G}", N=N, far_dev_wk=R.rate_per_week(ep[key], R.DEV))
             r.update({f"{k}_dev": v for k, v in R.summarise(nh).items()})
             dev_rows.append(r)
     for G in R.AOD_LOOKBACK:             # comparator: even check, same lookback and N candidates

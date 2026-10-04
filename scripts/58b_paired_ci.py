@@ -1,7 +1,10 @@
 """Paired bootstrap intervals for MaxE(Nuf) comparisons in the five low-sigma items (common random numbers).
 
-Within one run of scripts/53 all systems share error onsets, signs and QC draws, so trials are resampled jointly
-(same indices for every system and error size). MaxE(Nuf) = max over k of the mean per-trial contribution.
+Within one run of scripts/53 all systems share error onsets, signs and QC draws, and the same onsets are used for every error
+size k. Each resample draws onsets with replacement separately within positive and negative errors (150 each; even trial index =
+positive), applies the same indices to every system and k, and recomputes MaxE(Nuf) = max over k of the mean contribution for each
+system, so the maximisation over k is repeated in every resample. Comparison partners are fixed in advance (each pair below is
+reported separately; no partner is selected from the data).
 Inputs: fusion_trials.npz, fusion_loo_trials.npz. Output: outputs/tables/paired_ci.csv
 (ratio = MaxE(Nuf) of system A / system B, 95 % percentile interval, 2000 resamples).
 """
@@ -28,7 +31,8 @@ for run, pairs in COMPARE.items():
         sysn = {s for a_, b_ in pairs for s in (a_, b_)}
         c = {s: np.stack([z[f"{it}|{s}|{k:g}" if f"{it}|{s}|{k:g}" in z.files else f"{it}|{s}|{k}"][0] for k in ks]) for s in sysn}
         n = next(iter(c.values())).shape[1]
-        idx = rng.integers(0, n, (B, n))
+        pos, neg = np.arange(0, n, 2), np.arange(1, n, 2)
+        idx = np.hstack([rng.choice(pos, (B, pos.size)), rng.choice(neg, (B, neg.size))])   # stratified by sign
         boot = {s: np.stack([v[:, i].mean(1) for i in idx]).max(1) for s, v in c.items()}   # (B,)
         point = {s: v.mean(1).max() for s, v in c.items()}
         for a_, b_ in pairs:
