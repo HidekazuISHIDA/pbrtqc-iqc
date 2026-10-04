@@ -33,6 +33,9 @@ from pbrtqc import lis, spec, realsim as R
 ARGS = dict(a[2:].split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a)
 lis.VALUE = ARGS.get("value", "initial")
 SUF = "" if lis.VALUE == "initial" else f"_{lis.VALUE}"
+NOPRUNE = "--no-prune" in sys.argv     # check (2026-10-04): exhaustive three-component search without the per-component pre-filter
+if NOPRUNE:
+    SUF += "_noprune"
 N_TRIALS = 200
 KS = [0.5, 1.0, 2.0]
 CAPS = {"none": np.inf, "1.0": 1.0, "0.5": 0.5, "0.25": 0.25, "0.1": 0.1}
@@ -110,7 +113,11 @@ for it in spec.ITEMS:
             "pooled": combos("pooled")}
     # 3-way combination (AoD + even check + outpatient MA): prune components that alone exceed the cap
     three = {}
+    full3 = combos("aod", "even", "out") if NOPRUNE else None
     for cap_name, cap in CAPS.items():
+        if NOPRUNE:                     # merging episodes < 8 h apart can lower the count of a union, so test without the filter
+            three[cap_name] = full3
+            continue
         keep = {n: [k for k in by[n] if R.rate_per_week(ep[k], R.DEV) <= cap] or by[n] for n in ("aod", "even", "out")}
         saved = {n: by[n] for n in keep}
         by.update(keep)
