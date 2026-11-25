@@ -21,7 +21,7 @@ Step-by-step instructions (Japanese): [`docs/REPRODUCE_ja.md`](docs/REPRODUCE_ja
 ## Quick start (demo, macOS)
 ```bash
 ./setup_mac.sh                               # .venv with pinned packages + commit guard
-.venv/bin/python -m pbrtqc.pipeline          # synthetic exports -> all analyses (about 25 min)
+.venv/bin/python -m pbrtqc.pipeline          # synthetic exports -> all analyses (about 10 min)
 .venv/bin/python -m pbrtqc.verify            # compare with reference/demo_tables (all tables should agree)
 ```
 Or open the folder in VS Code and run `notebooks/00_setup.ipynb` … `06_verify.ipynb` in order (kernel: `.venv`).

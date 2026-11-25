@@ -45,7 +45,8 @@ def _compare_csv(a: Path, b: Path) -> tuple[str, str, int, float]:
             if fin.any():
                 worst = max(worst, float(np.max(np.abs(u[fin] - v[fin]) / np.maximum(np.abs(u[fin]), 1e-300))))
         else:
-            ok = (u.astype(str) == v.astype(str)).to_numpy()
+            na_u, na_v = u.isna().to_numpy(), v.isna().to_numpy()          # empty cells are equal to each other
+            ok = (na_u & na_v) | (~na_u & ~na_v & (u.astype(object).astype(str) == v.astype(object).astype(str)).to_numpy())
         bad += int((~ok).sum())
     return ("一致" if bad == 0 else "不一致"), (f"{bad} セルが違う" if bad else ""), len(x), worst
 
