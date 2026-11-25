@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "1. 環境を作る（初回のみ）", "type": "shell", "command": "./setup_mac.sh", "problemMatcher": [] },
+    { "label": "2. デモ：全ステップを実行", "type": "shell", "command": ".venv/bin/python -m pbrtqc.pipeline",
+      "options": { "env": { "PBRTQC_PROFILE": "demo" } }, "problemMatcher": [] },
+    { "label": "3. デモ：照合", "type": "shell", "command": ".venv/bin/python -m pbrtqc.verify",
+      "options": { "env": { "PBRTQC_PROFILE": "demo" } }, "problemMatcher": [] },
+    { "label": "4. 実データ：全ステップを実行", "type": "shell", "command": ".venv/bin/python -m pbrtqc.pipeline",
+      "options": { "env": { "PBRTQC_PROFILE": "real" } }, "problemMatcher": [] },
+    { "label": "5. 実データ：照合", "type": "shell", "command": ".venv/bin/python -m pbrtqc.verify",
+      "options": { "env": { "PBRTQC_PROFILE": "real" } }, "problemMatcher": [] }
+  ]
+}

@@ -14,10 +14,10 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R, iqc_model as M, iqc, risk
+from pbrtqc import config as C, lis, spec, realsim as R, iqc_model as M, iqc, risk
 
 S = spec.load()
-f = pd.read_csv(ROOT / "outputs/tables/fusion.csv")
+f = pd.read_csv(C.TABLES / "fusion.csv")
 f = f[f["system"] == "IQC"]
 rows = []
 for it in spec.ITEMS:
@@ -35,4 +35,4 @@ for it in spec.ITEMS:
         sim = f[(f["item"] == it) & (f["k"] == k)]["e_nuf"].iloc[0]
         rows.append(dict(item=it, k=k, ped=ped, run_mean=nbar, run_neff=neff, e_nuf_formula=formula, e_nuf_sim=sim))
     print(it, flush=True)
-pd.DataFrame(rows).to_csv(ROOT / "outputs/tables/parvin_check.csv", index=False)
+pd.DataFrame(rows).to_csv(C.TABLES / "parvin_check.csv", index=False)

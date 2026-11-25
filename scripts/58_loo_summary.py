@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import spec
+from pbrtqc import config as C, spec
 
-T = ROOT / "outputs/tables"
+T = C.TABLES
 f = pd.read_csv(T / "fusion_loo.csv")
 SYS = {"IQC": "IQC", "full": "Full", "no_aod": "−AoD", "no_even": "−even", "no_out": "−outMA", "PB:full": "−IQC"}
 k1 = f[np.isclose(f["k"], 1.0)].pivot(index="item", columns="system", values="med_hours")

@@ -21,12 +21,12 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R, iqc_model as M, iqc_data as Q
+from pbrtqc import config as C, lis, spec, realsim as R, iqc_model as M, iqc_data as Q
 
 HOURS = pd.date_range("2025-01-01 00:00", "2025-12-31 23:00", freq="h")
 S = spec.load()
-pairs = pd.read_csv(ROOT / "outputs/tables/select_pairs.csv")
-cvtab = pd.read_csv(ROOT / "outputs/tables/iqc_totalcv.csv").set_index("item")
+pairs = pd.read_csv(C.TABLES / "select_pairs.csv")
+cvtab = pd.read_csv(C.TABLES / "iqc_totalcv.csv").set_index("item")
 COMP = ["qcL", "qcH", "aod", "even", "out"]
 
 
@@ -109,7 +109,7 @@ for it in spec.ITEMS:
     data["items"].append(meta)
     print(it, len(episodes), flush=True)
 
-out = ROOT / "outputs/monitor"
+out = C.MONITOR
 out.mkdir(parents=True, exist_ok=True)
 (out / "data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
 print("written", (out / "data.json").stat().st_size // 1024, "KB")

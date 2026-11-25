@@ -1,4 +1,4 @@
-"""Loader for the IQC extract (data/qc/再検データ抽出QC2023_2025.xlsx).
+"""Loader for the IQC extract (location set in pbrtqc/config.py).
 
 Raw layout: one row per QC measurement pass; the patient-ID column holds the QC material ID (one per analyzer unit x level,
 constant over 2023-2025, i.e. NOT a lot number), カナ holds the material/level name, 到着時刻 the time,
@@ -12,17 +12,18 @@ Material/level names (カナ) are normalised to (material, level):
   Diabetes / HbA1cｺﾝﾄﾛｰﾙ / 糖尿病     -> HbA1c controls (not analysed)
   機器間差 / None                     -> ("interunit", "")           inter-analyzer comparison (not QC)
 
-build_cache() -> data/processed/iqc_results.pkl (one row per QC result; contains no patient data).
+build_cache() -> <work>/processed/iqc_results.pkl (one row per QC result; contains no patient data).
 """
 from __future__ import annotations
 import re
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from . import config
+from .lis import iter_rows
 
-ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / "data" / "qc" / "再検データ抽出QC2023_2025.xlsx"
-CACHE = ROOT / "data" / "processed" / "iqc_results.pkl"
+RAW = config.QC_RAW                                   # the IQC export (.xlsx or .csv with the same columns)
+CACHE = config.PROCESSED / "iqc_results.pkl"
 ITEM_NAME = {"ALP": "ALP･IFCC"}
 
 
@@ -42,12 +43,8 @@ def normalise(kana) -> tuple[str, str]:
 
 
 def build_cache() -> pd.DataFrame:
-    import openpyxl
-    ws = openpyxl.load_workbook(RAW, read_only=True).worksheets[0]
-    it = ws.iter_rows(values_only=True)
-    next(it)
     rows = []
-    for pas, r in enumerate(it):
+    for pas, r in enumerate(iter_rows(RAW)):
         mat, lvl = normalise(r[3])
         for j in range(12, len(r) - 3, 4):
             if r[j] is None:

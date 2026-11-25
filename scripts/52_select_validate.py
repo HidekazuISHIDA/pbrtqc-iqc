@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R
+from pbrtqc import config as C, lis, spec, realsim as R
 
 ARGS = dict(a[2:].split("=", 1) for a in sys.argv[1:] if a.startswith("--") and "=" in a)
 lis.VALUE = ARGS.get("value", "initial")
@@ -172,6 +172,6 @@ for it in spec.ITEMS:
                 val_rows.append(r)
     print(it, flush=True)
 
-pd.DataFrame(dev_rows).replace(np.inf, np.nan).to_csv(ROOT / f"outputs/tables/select_dev{SUF}.csv", index=False)
-pd.DataFrame(pair_rows).replace(np.inf, np.nan).to_csv(ROOT / f"outputs/tables/select_pairs{SUF}.csv", index=False)
-pd.DataFrame(val_rows).replace(np.inf, np.nan).to_csv(ROOT / f"outputs/tables/validate{SUF}.csv", index=False)
+pd.DataFrame(dev_rows).replace(np.inf, np.nan).to_csv(C.TABLES / f"select_dev{SUF}.csv", index=False)
+pd.DataFrame(pair_rows).replace(np.inf, np.nan).to_csv(C.TABLES / f"select_pairs{SUF}.csv", index=False)
+pd.DataFrame(val_rows).replace(np.inf, np.nan).to_csv(C.TABLES / f"validate{SUF}.csv", index=False)

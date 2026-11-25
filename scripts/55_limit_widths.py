@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R
+from pbrtqc import config as C, lis, spec, realsim as R
 
 N, TR = 50, "2.5-97.5"
 S = spec.load()
@@ -32,5 +32,5 @@ for it in spec.ITEMS:
         r[f"AoD_G{G}_per_day"] = int(st.dev.sum() / 731)
     rows.append(r)
 out = pd.DataFrame(rows)
-out.to_csv(ROOT / "outputs/tables/limit_widths.csv", index=False)
+out.to_csv(C.TABLES / "limit_widths.csv", index=False)
 print(out.round(2).to_string(index=False))

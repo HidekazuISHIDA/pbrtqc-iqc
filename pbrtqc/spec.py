@@ -4,7 +4,7 @@ Sources
   TEa            docs/10_TEa定義.md  (JSCC 2006, TEa = BA + 1.65 x CVA; no Na/Cl exception, no 5% cap)
   CVa            docs/09_項目選定.md (自施設 2024 測定不確かさ推定記録の合成標準不確かさ u_c, L 側)
                  ** conservative: u_c includes the calibrator's uncertainty. See docs/10 §8. **
-  distribution   outputs/tables/adult_dev_2023_2024.csv (scripts/03_adult_dev.py: 設定期間 2023-2024、18 歳以上。
+  distribution   optional workload table (load(dist_csv=...)); the analysis uses only the constants below. (設定期間 2023-2024、18 歳以上。
                  2023 年以降の旧抽出はもともと 18 歳以上のみ)
   analyzers      docs/09_項目選定.md
 """
@@ -85,9 +85,14 @@ ITEMS = [i for i in ITEMS21 if i not in EXCLUDED]
 
 def load(dist_csv=None) -> dict:
     """Return {item: spec dict} for the 21 analytes (development period 2023-2024, adults)."""
-    path = Path(dist_csv or ROOT / "outputs" / "tables" / "adult_dev_2023_2024.csv")
-    with open(path, encoding="utf-8") as f:
-        dist = {r["item"]: r for r in csv.DictReader(f)}
+    path = Path(dist_csv) if dist_csv else None
+    if path is not None and path.exists():
+        with open(path, encoding="utf-8") as f:
+            dist = {r["item"]: r for r in csv.DictReader(f)}
+    else:   # workload descriptors are optional; the analysis uses only the constants (TEa, unit, analyzer)
+        nan = "nan"
+        dist = {it: dict.fromkeys(["per_day_median", "weekday_median", "weekend_median", "inpat_frac", "inpat_frac_weekday",
+                                   "inpat_frac_weekend", "p2_5", "median", "p97_5"], nan) for it in ITEMS}
     out = {}
     for it in ITEMS:
         d = dist.get(it)

@@ -1,4 +1,4 @@
-"""Loader for the 2026-09 LIS extract (data/raw/lis_2023_2025/*.xlsx, patient results only).
+"""Loader for the LIS extract (patient results only; location set in pbrtqc/config.py).
 
 Raw layout: one row per measurement pass of a specimen; fixed columns 受付日, <patient ID column>,
 依頼元, 到着時刻, HISDATE (specimen ID), 年齢, 入外区分, 依頼科名, 性別, then up to 24 groups of
@@ -10,7 +10,7 @@ the first row; about half of reruns are on the other analyzer unit). For each sp
 `rep` numbers the rows in file order, `final` marks the last row carrying that item (the reported
 value) and `initial` the first.
 
-build_cache() flattens this to one row per result and writes data/processed/lis_results.pkl.
+build_cache() flattens this to one row per result and writes <work>/processed/lis_results.pkl.
 The patient ID and the specimen ID are replaced by sequential keys `pkey` / `sid` (the patient key is
 needed to link a patient's previous result for even check); the original IDs are not written anywhere.
 
@@ -26,10 +26,10 @@ import re
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from . import config
 
-ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / "data" / "raw" / "lis_2023_2025"
-CACHE = ROOT / "data" / "processed" / "lis_results.pkl"
+RAW = config.LIS_RAW                                  # folder with *.xlsx (laboratory export) or *.csv (same columns)
+CACHE = config.PROCESSED / "lis_results.pkl"
 
 ITEM_NAME = {"ALP": "ALP･IFCC"}                    # analysis name -> LIS name
 MATERIAL = {"GLU": "血液", "HbA1c": "血液"}        # default 血清
@@ -54,18 +54,33 @@ def to_value(raw: pd.Series) -> tuple[pd.Series, pd.Series]:
     return val, flag
 
 
+def iter_rows(path):
+    """Data rows of one export (header skipped) as tuples; empty cells are None. .xlsx (first sheet) or UTF-8 .csv."""
+    path = str(path)
+    if path.endswith(".csv"):
+        import csv
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            rd = csv.reader(fh)
+            next(rd)
+            for r in rd:
+                yield tuple(x if x != "" else None for x in r)
+    else:
+        import openpyxl
+        it = openpyxl.load_workbook(path, read_only=True).worksheets[0].iter_rows(values_only=True)
+        next(it)
+        yield from it
+
+
 def build_cache(files=None) -> pd.DataFrame:
-    import openpyxl
-    files = sorted(files or glob.glob(str(RAW / "*.xlsx")))
+    files = sorted(files or glob.glob(str(RAW / "*.xlsx")) + glob.glob(str(RAW / "*.csv")))
+    if not files:
+        raise FileNotFoundError(f"no *.xlsx or *.csv in {RAW}")
     acc_rows, res_rows = [], []
     pid_map: dict[str, int] = {}
     sid_map: dict[str, int] = {}
     acc_id = 0
     for f in files:
-        ws = openpyxl.load_workbook(f, read_only=True).worksheets[0]
-        it = ws.iter_rows(values_only=True)
-        next(it)
-        for r in it:
+        for r in iter_rows(f):
             acc_id += 1
             pk = pid_map.setdefault(str(r[1]), len(pid_map) + 1)
             sk = sid_map.setdefault(str(r[4]), len(sid_map) + 1)

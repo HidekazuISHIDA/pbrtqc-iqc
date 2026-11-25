@@ -21,11 +21,11 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R, iqc_model as M, iqc_data as Q
+from pbrtqc import config as C, lis, spec, realsim as R, iqc_model as M, iqc_data as Q
 
 WIN = np.timedelta64(12, "h")
 S = spec.load()
-pairs = pd.read_csv(ROOT / "outputs/tables/select_pairs.csv")
+pairs = pd.read_csv(C.TABLES / "select_pairs.csv")
 conc, monthly = [], []
 
 
@@ -87,8 +87,8 @@ for it in spec.ITEMS:
             monthly.append(dict(item=it, month=mth, alarms=int(mon.get(mth, 0)), level=lv, qc_dev_pct=v))
     print(it, flush=True)
 
-pd.DataFrame(conc).to_csv(ROOT / "outputs/tables/shadow_concordance.csv", index=False)
-pd.DataFrame(monthly).to_csv(ROOT / "outputs/tables/shadow_monthly.csv", index=False)
+pd.DataFrame(conc).to_csv(C.TABLES / "shadow_concordance.csv", index=False)
+pd.DataFrame(monthly).to_csv(C.TABLES / "shadow_monthly.csv", index=False)
 
 
 # ---- 2 x 2 with item-level QC shifts (docs/16 layer 2) -----------------------------------------------
@@ -98,7 +98,7 @@ pd.DataFrame(monthly).to_csv(ROOT / "outputs/tables/shadow_monthly.csv", index=F
 # Cells: both = analytical change; QC only = QC-material side (lot change, deterioration);
 #        PBRTQC only = patient population / patient-only error.
 SHIFT_K, MATCH = 2.0, np.timedelta64(3, "D")
-cv = pd.read_csv(ROOT / "outputs/tables/iqc_totalcv.csv").set_index("item")["cva"]
+cv = pd.read_csv(C.TABLES / "iqc_totalcv.csv").set_index("item")["cva"]
 rows2 = []
 for it in spec.ITEMS:
     qc = Q.load(it, 1)
@@ -129,4 +129,4 @@ for it in spec.ITEMS:
     rows2.append(dict(item=it, qc_shifts=int(qev.size), both=int(q_hit.sum()), qc_only=int((~q_hit).sum()),
                       pb_episodes=int(pst.size), pb_only=int((~p_hit).sum()),
                       both_dates=";".join(str(x)[:10] for x in qev[q_hit])))
-pd.DataFrame(rows2).to_csv(ROOT / "outputs/tables/shadow_2x2.csv", index=False)
+pd.DataFrame(rows2).to_csv(C.TABLES / "shadow_2x2.csv", index=False)

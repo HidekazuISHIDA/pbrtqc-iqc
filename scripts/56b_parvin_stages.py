@@ -22,7 +22,7 @@ import pandas as pd
 from scipy.stats import norm
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import iqc
+from pbrtqc import config as C, iqc
 
 rng = np.random.default_rng(20261004)
 N, TRIALS, HIST, FOLLOW, CAP = 30, 20000, 10, 34, 5000
@@ -79,8 +79,8 @@ for s in SHIFTS:
                      share_censored_C=float((mb >= FOLLOW).mean())))
     print({k: round(v, 3) if isinstance(v, float) else v for k, v in rows[-1].items()}, flush=True)
 out = pd.DataFrame(rows)
-out.to_csv(ROOT / "outputs/tables/parvin_stages.csv", index=False)
-pv = pd.read_csv(ROOT / "outputs/tables/parvin_check.csv")
+out.to_csv(C.TABLES / "parvin_stages.csv", index=False)
+pv = pd.read_csv(C.TABLES / "parvin_check.csv")
 pv = pv[pv["e_nuf_formula"] > 0.01]
 print("D (real schedule; items with formula E(Nuf) > 0.01):",
       {k: (round(g["e_nuf_sim"].div(g["e_nuf_formula"]).median(), 2), len(g)) for k, g in pv.groupby("k")})

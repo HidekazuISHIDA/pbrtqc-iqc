@@ -1,7 +1,17 @@
+# never commit data, caches or local settings
 data/
-outputs/
+work/
+work_demo/
+pbrtqc.local.json
 *.pkl
 *.xlsx
-*.csv
+outputs/
+.venv/
 __pycache__/
+.ipynb_checkpoints/
 .DS_Store
+# result tables are not committed, except the demo reference
+*.csv
+*.npz
+!reference/demo_tables/*.csv
+!reference/demo_tables/*.npz

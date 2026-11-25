@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuse commits that could carry patient data (see tools/guard.py).
+PY=.venv/bin/python; [ -x "$PY" ] || PY=python3
+exec "$PY" tools/guard.py

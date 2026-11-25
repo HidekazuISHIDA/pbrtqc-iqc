@@ -1,0 +1,9 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "jupyter.notebookFileRoot": "${workspaceFolder}",
+  "notebook.output.scrolling": true,
+  "files.exclude": { "**/__pycache__": true, ".venv": true },
+  "search.exclude": { "work/**": true, "work_demo/**": true, "data/**": true },
+  "files.watcherExclude": { "**/work/**": true, "**/work_demo/**": true, "**/data/**": true, "**/.venv/**": true }
+}

@@ -1,0 +1,2 @@
+results,patients,specimens,age_median,age_q1,age_q3,male_pct,inpatient_results_pct,spec_age_median,spec_age_q1,spec_age_q3,spec_male_pct,spec_inpatient_pct
+1256699,24555,167077,66.0,56.0,76.0,49.94094889024638,42.05175622802278,66.0,56.0,76.0,50.21576877727036,42.37387551847352

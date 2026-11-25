@@ -14,9 +14,9 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import spec
+from pbrtqc import config as C, spec
 
-T = ROOT / "outputs/tables"
+T = C.TABLES
 LOW5 = ["Na", "ALB", "Cl", "Ca", "Mg"]
 B = 2000
 rng = np.random.default_rng(1)

@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import spec
+from pbrtqc import config as C, spec
 
-T = ROOT / "outputs/tables"
+T = C.TABLES
 rows = []
 for run, lab in [("fusion", "No bias"), ("fusion_sens_unit1_initial_bias0.25", "Bias 0.25 × TEa")]:
     z = np.load(T / f"{run}_trials.npz")

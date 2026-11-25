@@ -11,12 +11,12 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R
+from pbrtqc import config as C, lis, spec, realsim as R
 
 SUF = "_final" if "final" in sys.argv[1:] else ""
 if SUF:
     lis.VALUE = "final"
-p = ROOT / f"outputs/tables/select_dev{SUF}.csv"
+p = C.TABLES / f"select_dev{SUF}.csv"
 sd = pd.read_csv(p)
 if sd.loc[sd["stream"] == "aod", "trunc"].str.contains(r"\|G").all():
     sys.exit(f"{p.name}: already repaired")

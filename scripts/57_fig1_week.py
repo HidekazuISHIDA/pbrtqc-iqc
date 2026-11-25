@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R
+from pbrtqc import config as C, lis, spec, realsim as R
 
 ITEM, N, TR, G = "ALB", 50, "2.5-97.5", 90
 START, END = pd.Timestamp("2024-06-10 00:00"), pd.Timestamp("2024-06-14 23:00")
@@ -42,7 +42,7 @@ for name, st in streams.items():
     lim.append(dict(Statistic=name, centre=centre, half_width=half, **{"Control limit (± % of median Alb)": half / med * 100}))
 tea = R.tea(ITEM, S) * 100
 lim.append(dict(Statistic="TEa", **{"Control limit (± % of median Alb)": tea}))
-out.to_csv(ROOT / "outputs/tables/fig1_week.csv", index=False)
-pd.DataFrame(lim).to_csv(ROOT / "outputs/tables/fig1_limits.csv", index=False)
+out.to_csv(C.TABLES / "fig1_week.csv", index=False)
+pd.DataFrame(lim).to_csv(C.TABLES / "fig1_limits.csv", index=False)
 print(pd.DataFrame(lim).round(3).to_string(index=False))
 print(out.iloc[:, 3:].describe().round(2).loc[["min", "max"]].to_string())

@@ -54,11 +54,11 @@ import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pbrtqc import lis, spec, realsim as R, iqc_model as M, iqc, risk
+from pbrtqc import config as C, lis, spec, realsim as R, iqc_model as M, iqc, risk
 
 R.FOLLOW = np.timedelta64(14, "D")
 EQA = "--eqa-bias" in sys.argv
-B0 = (pd.read_csv(ROOT / "data/EQA/parsed/jamt2026.csv").groupby("item")["bias_pct"].mean() / 100).to_dict() \
+B0 = (pd.read_csv(C.WORK / "EQA/parsed/jamt2026.csv").groupby("item")["bias_pct"].mean() / 100).to_dict() \
     if EQA else {}
 N_TRIALS = 300
 KS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
@@ -79,7 +79,7 @@ SYSTEMS = ["aod+even+out"] if WHATIF or LOO else ["aod+even+out", "aod+out", "ev
 HIST = 10
 S = spec.load()
 FIXED = "--fixed-settings" in sys.argv          # final values evaluated with the settings chosen on initial values
-pairs = pd.read_csv(ROOT / f"outputs/tables/select_pairs{'' if FIXED or ARGS.get('value', 'initial') == 'initial' else '_' + ARGS['value']}.csv")
+pairs = pd.read_csv(C.TABLES / f"select_pairs{'' if FIXED or ARGS.get('value', 'initial') == 'initial' else '_' + ARGS['value']}.csv")
 cv_rows, rows, trials = [], [], {}
 
 
@@ -216,11 +216,11 @@ if LOO:
     name = "fusion_loo"
 if WHATIF:
     name = f"fusion_whatif_cap{CAP}_qc{'-'.join(map(str, EXTRA_QC)) or 'none'}"
-    pd.DataFrame(cv_rows).to_csv(ROOT / f"outputs/tables/{name}_iqc.csv", index=False)
+    pd.DataFrame(cv_rows).to_csv(C.TABLES / f"{name}_iqc.csv", index=False)
 elif SENS:
-    pd.DataFrame(cv_rows).to_csv(ROOT / f"outputs/tables/{name}_iqc.csv", index=False)
+    pd.DataFrame(cv_rows).to_csv(C.TABLES / f"{name}_iqc.csv", index=False)
 elif not EQA and not LOO:
-    pd.DataFrame(cv_rows).to_csv(ROOT / "outputs/tables/iqc_totalcv.csv", index=False)
-pd.DataFrame(rows).replace(np.inf, np.nan).to_csv(ROOT / f"outputs/tables/{name}.csv", index=False)
+    pd.DataFrame(cv_rows).to_csv(C.TABLES / "iqc_totalcv.csv", index=False)
+pd.DataFrame(rows).replace(np.inf, np.nan).to_csv(C.TABLES / f"{name}.csv", index=False)
 if trials:
-    np.savez_compressed(ROOT / f"outputs/tables/{name}_trials.npz", **trials)
+    np.savez_compressed(C.TABLES / f"{name}_trials.npz", **trials)

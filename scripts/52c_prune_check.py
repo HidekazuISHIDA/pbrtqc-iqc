@@ -8,11 +8,14 @@ Reproducibility check: configurations without the pre-filter (two-component, inp
 table must be identical in both runs.
 Output: outputs/tables/prune_check.csv
 """
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
-T = ROOT / "outputs/tables"
+sys.path.insert(0, str(ROOT))
+from pbrtqc import config as C
+T = C.TABLES
 
 a = pd.read_csv(T / "select_pairs.csv")
 b = pd.read_csv(T / "select_pairs_noprune.csv")

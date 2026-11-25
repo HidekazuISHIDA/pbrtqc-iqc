@@ -1,40 +1,55 @@
 # PBRTQC + IQC: patient-based real-time quality control combined with internal QC
 
-Code and a synthetic demonstration for the study *Combining patient-based real-time quality control with internal quality
-control to reduce patient risk* (Clinica Chimica Acta, submitted).
+Code, a synthetic data set and a reproducible pipeline for the study of patient-based real-time quality control (PBRTQC)
+designed for the daily case mix of a hospital laboratory and combined with internal quality control (IQC)
+(Clinica Chimica Acta, in preparation).
 
-**Live demo (synthetic data only):** https://hidekazuishida.github.io/pbrtqc-iqc/demo/ (GitHub Pages), or open `demo/index.html` through a local web server.
-The demo replays January 2025 for one simulated analyzer with the 20 study analytes; a systematic error of +1.5 × TEa on Ca is
-injected on 20–23 January. Useful URL parameters: `?t=2025-01-21T10:00&item=Ca`, `&play=1&speed=250&until=2025-01-24T00:00`,
-`&lang=ja`, `&theme=light`.
+**Live demo of the monitoring screen (synthetic data only):** https://hidekazuishida.github.io/pbrtqc-iqc/demo/
+(useful URL parameters: `?t=2025-01-21T10:00&item=Ca`, `&play=1&speed=250&until=2025-01-24T00:00`, `&lang=ja`, `&theme=light`).
 
-## What the code does
-| Module / script | Purpose |
+## How the code was built and how it is verified
+| Stage | Who | What | Data |
+|---|---|---|---|
+| 1. Build | AI coding assistant (Claude, Anthropic), reviewed by the authors | Analysis methods, monitoring screen and verification method, run end to end on synthetic data | Synthetic exports (`scripts/00_make_synthetic_raw.py`) |
+| 2. Environment | AI coding assistant | VS Code + Jupyter environment and instructions to run the same code on real data | none |
+| 3. Reproduction | An author | Runs the published code on the laboratory's own exports on a local computer | Real data (never leave the computer) |
+| 4. Verification | An author | Compares every result table cell by cell with the tables of the reported analysis (`notebooks/06_verify.ipynb`) | Aggregate tables only |
+
+There is one code path; the demo and the real analysis differ only in which exports are read (`pbrtqc/config.py`).
+Step-by-step instructions (Japanese): [`docs/REPRODUCE_ja.md`](docs/REPRODUCE_ja.md).
+
+## Quick start (demo, macOS)
+```bash
+./setup_mac.sh                               # .venv with pinned packages + commit guard
+.venv/bin/python -m pbrtqc.pipeline          # synthetic exports -> all analyses (about 25 min)
+.venv/bin/python -m pbrtqc.verify            # compare with reference/demo_tables (all tables should agree)
+```
+Or open the folder in VS Code and run `notebooks/00_setup.ipynb` … `06_verify.ipynb` in order (kernel: `.venv`).
+
+## Layout
+| Path | Purpose |
 |---|---|
-| `pbrtqc/realsim.py` | Patient streams, truncated moving average (MA), average of patient deltas (AoD), even check, control limits (mean ± 3 SD of the development period), alarm episodes, error injection |
-| `pbrtqc/engine.py` | Moving statistics and truncation |
-| `pbrtqc/iqc.py`, `pbrtqc/iqc_model.py` | Westgard multirule, QC events, robust Total CV |
-| `pbrtqc/risk.py` | Parvin's expected number of unreliable final results, E(Nuf) |
-| `pbrtqc/lis.py`, `pbrtqc/iqc_data.py` | Loaders for the laboratory-information-system exports used in the study (format described in the docstrings) |
-| `scripts/52_select_validate.py` | Select settings in the development period under an alarm limit; evaluate in the validation year |
-| `scripts/53_iqc_fusion.py` | IQC + PBRTQC fusion simulation, detection time and MaxE(Nuf) |
-| `scripts/54_shadow_concordance.py` | Real-data shadow operation and concordance with QC shifts |
-| `scripts/55`–`58` | Control-limit widths, check against Parvin's formula, Figure 1 data, contribution of each component (`53 --loo`) |
-| `scripts/60_build_monitor.py` | Data for the monitoring screen |
-| `scripts/demo_make_data.py` | Synthetic data for the demo (no patient data) |
-| `monitor/index.html` | Monitoring screen (single file, no external libraries) |
+| `pbrtqc/config.py` | Profile `demo` (synthetic, `work_demo/`) or `real` (paths in `pbrtqc.local.json`, never committed; results in `work/`) |
+| `pbrtqc/pipeline.py` | Runs all steps in a fixed order and writes a run log (code version, package versions, timings, SHA-256 of inputs) |
+| `pbrtqc/verify.py` | Cell-by-cell comparison of 43 result tables with reference tables (relative tolerance 1e-9) |
+| `pbrtqc/lis.py`, `pbrtqc/iqc_data.py` | Loaders for the LIS and IQC exports (.xlsx, or .csv with the same columns); IDs replaced by sequential keys |
+| `pbrtqc/realsim.py`, `engine.py` | Patient streams, truncated moving average, average of patient deltas (AoD), even check, control limits, alarm episodes |
+| `pbrtqc/iqc.py`, `iqc_model.py`, `risk.py` | Westgard multirule, QC events, robust CV, Parvin's E(Nuf) |
+| `scripts/00`–`01`, `51`, `59` | Synthetic exports, caches, selection flow, cohort description |
+| `scripts/52`–`52c` | Setting selection in 2023–2024 under an alarm limit, validation in 2025, exhaustive-search check |
+| `scripts/53` | IQC + PBRTQC simulation: detection time, MaxE(Nuf), component removal, sensitivity and what-if analyses |
+| `scripts/54`–`58c` | Shadow operation, limit widths, checks against Parvin's formula, Figure 1 data, paired intervals, bias by sign |
+| `scripts/60`, `monitor/index.html` | Monitoring screen (single file, no external libraries) |
+| `notebooks/` | The same steps as Jupyter notebooks with Japanese explanations |
+| `reference/demo_tables/` | Result tables of the synthetic data (reference for the demo verification) |
+| `tools/guard.py`, `.githooks/` | Refuses commits that could carry patient data |
 
 ## Data availability
-The patient and QC data contain confidential clinical information and are **not** included. The scripts expect exports
-in the format described in `pbrtqc/lis.py` and `pbrtqc/iqc_data.py`; paths are relative to the repository root
-(`data/raw/...`, `data/qc/...`). All analyses run on a local computer; no data leave the institution.
+The patient and QC data contain confidential clinical information and are **not** included. The loaders document the
+expected export format; the synthetic generator writes files in the same layout.
 
 ## Requirements
-Python ≥ 3.11, see `requirements.txt`.
-
-## AI assistance
-Analysis scripts and the monitoring-screen prototype were written with the assistance of an AI coding assistant
-(Claude, Anthropic). All code was reviewed by the authors and the results were verified independently.
+Python 3.14 and the pinned versions in `requirements.txt` (identical versions give identical numbers).
 
 ## Licence
 MIT (see `LICENSE`).
